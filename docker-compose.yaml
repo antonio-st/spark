@@ -1,0 +1,54 @@
+version: '3.9'
+
+services:
+
+  spark_task_0:
+    build: .
+    working_dir: /data
+    volumes:
+      - ./data:/data
+    entrypoint: wget
+    command: [ "-nc", "https://raw.githubusercontent.com/selva86/datasets/master/bank-full.csv" ]
+
+  postgresql:
+    image: 'bitnami/postgresql:13'
+    ports:
+      - 5434:5432
+    volumes:
+      - './services/postgresql:/bitnami/postgresql'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - POSTGRESQL_USERNAME=p_user
+      - POSTGRESQL_PASSWORD=password123
+      - POSTGRESQL_DATABASE=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U p_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  spark-master:
+    image: 'bitnami/spark:3.2.0'
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    volumes:
+      - ./data:/data
+      - ./target/scala-2.12:/jars
+    ports:
+      - 7077:7077
+      - 8079:8080
+      - "4040-4080"
+
+  spark-worker:
+    image: 'bitnami/spark:3.2.0'
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+    volumes:
+      - ./data:/data
+    deploy:
+      mode: replicated
+      replicas: 1

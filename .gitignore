@@ -1,0 +1,9 @@
+data/*
+!data/events.7z
+.gitlab-ci.yml
+.idea/*
+.bsp/*
+target/*
+project/*
+!project/build.properties
+!project/plugins.sbt
